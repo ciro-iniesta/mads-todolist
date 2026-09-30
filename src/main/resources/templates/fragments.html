@@ -7,6 +7,47 @@
     <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
 </head>
 
+<!-- || Barra de Menú || -->
+<nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <a class="navbar-brand" href="/about">ToDoList</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <!-- Enlaces a la izquierda (Solo si está logueado) -->
+        <ul class="navbar-nav mr-auto" th:if="${usuario != null}">
+            <li class="nav-item">
+                <a class="nav-link" th:href="@{/usuarios/{id}/tareas(id=${usuario.id})}">Tareas</a>
+            </li>
+        </ul>
+
+        <!-- Enlaces a la derecha (Si está logueado) -->
+        <ul class="navbar-nav ml-auto" th:if="${usuario != null}">
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" th:text="${usuario.nombre}">
+                    Usuario
+                </a>
+                <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                    <a class="dropdown-item" href="#">Cuenta</a>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="/logout" th:text="'Cerrar sesión ' + ${usuario.nombre}">Cerrar sesión</a>
+                </div>
+            </li>
+        </ul>
+
+        <!-- Enlaces a la derecha (Si NO está logueado) -->
+        <ul class="navbar-nav ml-auto" th:unless="${usuario != null}">
+            <li class="nav-item">
+                <a class="nav-link" href="/login">Login</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/registro">Registro</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
 <div th:fragment="javascript">
     <script th:src="@{/js/jquery.min.js}"></script>
     <script th:src="@{/js/popper.min.js}"></script>
