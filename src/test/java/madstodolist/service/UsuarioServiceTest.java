@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.jdbc.Sql;
-
+import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
@@ -152,5 +152,21 @@ public class UsuarioServiceTest {
         assertThat(usuario.getId()).isEqualTo(usuarioId);
         assertThat(usuario.getEmail()).isEqualTo("user@ua");
         assertThat(usuario.getNombre()).isEqualTo("Usuario Ejemplo");
+    }
+
+    @Test
+    public void servicioListarUsuarios() {
+        // GIVEN
+        UsuarioData usuario = new UsuarioData();
+        usuario.setEmail("usuario.listado@gmail.com");
+        usuario.setPassword("12345");
+        usuarioService.registrar(usuario);
+
+        // WHEN
+        List<UsuarioData> usuarios = usuarioService.allUsuarios();
+
+        // THEN
+        // Comprobamos que al menos recuperamos 1 elemento tras el registro
+        assertThat(usuarios).hasSizeGreaterThan(0);
     }
 }

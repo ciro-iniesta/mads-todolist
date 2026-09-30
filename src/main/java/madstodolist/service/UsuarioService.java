@@ -9,7 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -71,5 +72,15 @@ public class UsuarioService {
         else {
             return modelMapper.map(usuario, UsuarioData.class);
         }
+    }
+
+    @Transactional(readOnly = true)
+    public List<UsuarioData> allUsuarios() {
+        List<UsuarioData> usuarios = new ArrayList<>();
+        // Recuperamos todos los usuarios del repositorio y los mapeamos a DTO
+        for (Usuario usuario : usuarioRepository.findAll()) {
+            usuarios.add(modelMapper.map(usuario, UsuarioData.class));
+        }
+        return usuarios;
     }
 }
