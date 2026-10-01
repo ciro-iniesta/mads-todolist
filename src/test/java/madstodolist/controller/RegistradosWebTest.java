@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.Arrays;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -43,5 +44,26 @@ public class RegistradosWebTest {
         this.mockMvc.perform(get("/registrados"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("test.registro@ua.es")));
+    }
+
+    @Test
+    public void descripcionUsuarioMuestraDatosSinPassword() throws Exception {
+        // GIVEN: Un usuario en la base de datos (simulado)
+        UsuarioData usuario = new UsuarioData();
+        usuario.setId(1L);
+        usuario.setEmail("ciro@ua.es");
+        usuario.setNombre("Ciro Iniesta");
+        usuario.setPassword("supersecreta123"); // Contraseña que NO debe viajar a la vista
+
+        // Mockeamos el servicio que ya tienes implementado
+        when(usuarioService.findById(1L)).thenReturn(usuario);
+
+        // WHEN + THEN: Hacemos la petición y validamos las COS
+        this.mockMvc.perform(get("/registrados/1"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("ciro@ua.es")))
+                .andExpect(content().string(containsString("Ciro Iniesta")))
+                // VALIDACIÓN DE SEGURIDAD: La contraseña no se expone en absoluto
+                .andExpect(content().string(not(containsString("supersecreta123"))));
     }
 }

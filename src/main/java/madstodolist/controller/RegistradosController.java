@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.List;
 
@@ -25,5 +26,21 @@ public class RegistradosController {
 
         // Devolvemos el nombre de la plantilla HTML
         return "registrados";
+    }
+
+    @GetMapping("/registrados/{id}")
+    public String descripcionUsuario(@PathVariable("id") Long id, Model model) {
+        // Recuperamos el DTO de la capa de servicio
+        UsuarioData usuario = usuarioService.findById(id);
+
+        if (usuario == null) {
+            return "redirect:/registrados"; // Seguridad adicional si el ID no existe
+        }
+
+        // LIMPIEZA DE DATOS SENSIBLES ANTES DE LA VISTA
+        usuario.setPassword(null);
+
+        model.addAttribute("usuarioDetalle", usuario);
+        return "usuarioDesc";
     }
 }
