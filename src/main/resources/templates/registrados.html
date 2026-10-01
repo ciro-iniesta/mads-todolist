@@ -15,6 +15,7 @@
                 <tr>
                     <th>Identificador</th>
                     <th>Correo electrónico</th>
+                    <th>Acción</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -22,6 +23,9 @@
                 <tr th:each="usuario : ${usuarios}">
                     <td th:text="${usuario.id}"></td>
                     <td th:text="${usuario.email}"></td>
+                    <td>
+                            <a class="btn btn-info btn-sm" th:href="@{/registrados/{id}(id=${usuario.id})}">Ver detalles</a>
+                    </td>
                 </tr>
                 </tbody>
             </table>
