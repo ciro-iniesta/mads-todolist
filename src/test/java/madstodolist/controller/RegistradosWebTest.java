@@ -3,19 +3,24 @@ package madstodolist.controller;
 import madstodolist.dto.UsuarioData;
 import madstodolist.service.UsuarioService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 
 import java.util.Arrays;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -65,5 +70,38 @@ public class RegistradosWebTest {
                 .andExpect(content().string(containsString("Ciro Iniesta")))
                 // VALIDACIÓN DE SEGURIDAD: La contraseña no se expone en absoluto
                 .andExpect(content().string(not(containsString("supersecreta123"))));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/registrados", "/registrados/20"})
+    public void menuMuestraUsuarioConectado(String ruta) throws Exception {
+        UsuarioData administrador = new UsuarioData();
+        administrador.setId(8L);
+        administrador.setNombre("Admin actual");
+        administrador.setEmail("admin@ua.es");
+        administrador.setAdministrador(true);
+
+        // El detalle pertenece a otra persona, no al administrador conectado.
+        UsuarioData detalle = new UsuarioData();
+        detalle.setId(20L);
+        detalle.setNombre("Persona consultada");
+        detalle.setEmail("persona@ua.es");
+
+        when(usuarioService.findById(8L)).thenReturn(administrador);
+        when(usuarioService.findById(20L)).thenReturn(detalle);
+        when(usuarioService.allUsuarios()).thenReturn(Arrays.asList(administrador, detalle));
+
+        ResultActions respuesta = mockMvc.perform(get(ruta)
+                        .sessionAttr("idUsuarioLogeado", 8L))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("usuario", sameInstance(administrador)))
+                .andExpect(content().string(containsString("Cerrar sesión Admin actual")))
+                .andExpect(content().string(not(containsString("Cerrar sesión Persona consultada"))))
+                .andExpect(content().string(not(containsString("href=\"/login\""))));
+
+        if (ruta.equals("/registrados/20")) {
+            respuesta.andExpect(model().attribute("usuarioDetalle", sameInstance(detalle)))
+                    .andExpect(content().string(containsString("Persona consultada")));
+        }
     }
 }

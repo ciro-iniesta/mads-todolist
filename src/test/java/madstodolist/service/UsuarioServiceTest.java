@@ -169,4 +169,102 @@ public class UsuarioServiceTest {
         // Comprobamos que al menos recuperamos 1 elemento tras el registro
         assertThat(usuarios).hasSizeGreaterThan(0);
     }
+
+    // Prepara los datos; cada test decide cuándo registrarlos y si serán de administrador.
+    private UsuarioData datosRegistro(String email) {
+        UsuarioData usuario = new UsuarioData();
+        usuario.setEmail(email);
+        usuario.setPassword("12345678");
+        return usuario;
+    }
+
+    @Test
+    public void noExisteAdministradorConBaseDeDatosVacia() {
+        // @Sql limpia la base de datos antes de cada test.
+        assertThat(usuarioService.existeAdministrador()).isFalse();
+    }
+
+    @Test
+    public void registroSinSolicitarAdministradorCreaUsuarioNormal() {
+        // No asignamos administrador: comprobamos el valor por defecto al guardar.
+        UsuarioData registrado = usuarioService.registrar(datosRegistro("normal@ejemplo.com"));
+
+        UsuarioData recuperado = usuarioService.findById(registrado.getId());
+        assertThat(recuperado).isNotNull();
+        assertThat(recuperado.isAdministrador()).isFalse();
+        assertThat(usuarioService.existeAdministrador()).isFalse();
+
+        // Un usuario normal no impide registrar después al primer administrador.
+        UsuarioData administrador = datosRegistro("admin@ejemplo.com");
+        administrador.setAdministrador(true);
+        usuarioService.registrar(administrador);
+        assertThat(usuarioService.existeAdministrador()).isTrue();
+    }
+
+    @Test
+    public void registroAdministradorConservaElRolAlRecuperarlo() {
+        UsuarioData administrador = datosRegistro("admin@ejemplo.com");
+        administrador.setAdministrador(true);
+
+        UsuarioData registrado = usuarioService.registrar(administrador);
+
+        assertThat(registrado.getId()).isNotNull();
+        assertThat(registrado.isAdministrador()).isTrue();
+        assertThat(usuarioService.existeAdministrador()).isTrue();
+
+        // Estas consultas comprueban también la conversión entre entidad y DTO.
+        UsuarioData porId = usuarioService.findById(registrado.getId());
+        UsuarioData porEmail = usuarioService.findByEmail("admin@ejemplo.com");
+        assertThat(porId).isNotNull();
+        assertThat(porEmail).isNotNull();
+        assertThat(porId.isAdministrador()).isTrue();
+        assertThat(porEmail.isAdministrador()).isTrue();
+        assertThat(porEmail.getId()).isEqualTo(registrado.getId());
+    }
+
+    @Test
+    public void rechazarSegundoAdministradorNoLoGuarda() {
+        UsuarioData primero = datosRegistro("admin@ejemplo.com");
+        primero.setAdministrador(true);
+        usuarioService.registrar(primero);
+
+        UsuarioData segundo = datosRegistro("otro-admin@ejemplo.com");
+        segundo.setAdministrador(true);
+
+        UsuarioServiceException excepcion = Assertions.assertThrows(
+                UsuarioServiceException.class,
+                () -> usuarioService.registrar(segundo));
+
+        assertThat(excepcion.getMessage()).isEqualTo("Ya existe un usuario administrador");
+        assertThat(usuarioService.findByEmail("otro-admin@ejemplo.com")).isNull();
+        assertThat(usuarioService.allUsuarios()).hasSize(1);
+        assertThat(usuarioService.findByEmail("admin@ejemplo.com").isAdministrador()).isTrue();
+    }
+
+    @Test
+    public void administradorExistentePermiteRegistrarVariosUsuariosNormales() {
+        UsuarioData administrador = datosRegistro("admin@ejemplo.com");
+        administrador.setAdministrador(true);
+        usuarioService.registrar(administrador);
+
+        usuarioService.registrar(datosRegistro("normal1@ejemplo.com"));
+        usuarioService.registrar(datosRegistro("normal2@ejemplo.com"));
+
+        assertThat(usuarioService.allUsuarios()).hasSize(3);
+        assertThat(usuarioService.findByEmail("normal1@ejemplo.com").isAdministrador()).isFalse();
+        assertThat(usuarioService.findByEmail("normal2@ejemplo.com").isAdministrador()).isFalse();
+        assertThat(usuarioService.existeAdministrador()).isTrue();
+    }
+
+    @Test
+    public void administradorDebeValidarSuPasswordParaIniciarSesion() {
+        UsuarioData administrador = datosRegistro("admin@ejemplo.com");
+        administrador.setAdministrador(true);
+        usuarioService.registrar(administrador);
+
+        assertThat(usuarioService.login("admin@ejemplo.com", "incorrecta"))
+                .isEqualTo(UsuarioService.LoginStatus.ERROR_PASSWORD);
+        assertThat(usuarioService.login("admin@ejemplo.com", "12345678"))
+                .isEqualTo(UsuarioService.LoginStatus.LOGIN_OK);
+    }
 }

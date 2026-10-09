@@ -4,6 +4,7 @@ import madstodolist.model.Usuario;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +12,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @Sql(scripts = "/clean-db.sql")
@@ -170,5 +172,28 @@ public class UsuarioTest {
         // se obtiene el usuario correcto.
 
         assertThat(usuarioBD.getNombre()).isEqualTo("Usuario Ejemplo");
+    }
+
+    @Test
+    public void baseDeDatosImpideGuardarDosAdministradores() {
+        Usuario primero = new Usuario("admin@ejemplo.com");
+        primero.setPassword("12345678");
+        primero.setAdministrador(true);
+        usuarioRepository.save(primero);
+
+        Usuario segundo = new Usuario("otro-admin@ejemplo.com");
+        segundo.setPassword("12345678");
+        segundo.setAdministrador(true);
+
+        // Usamos directamente el repositorio para comprobar la restricción de la BD.
+        // Sin @Transactional en el test, cada save termina su propia transacción.
+        assertThatThrownBy(() -> usuarioRepository.save(segundo))
+                .isInstanceOf(DataIntegrityViolationException.class);
+
+        assertThat(usuarioRepository.count()).isEqualTo(1L);
+        assertThat(usuarioRepository.findByEmail("otro-admin@ejemplo.com")).isEmpty();
+        Usuario administradorGuardado = usuarioRepository.findById(primero.getId())
+                .orElseThrow(() -> new AssertionError("Debe conservarse el primer administrador"));
+        assertThat(administradorGuardado.isAdministrador()).isTrue();
     }
 }
