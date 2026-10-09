@@ -11,6 +11,7 @@ public class UsuarioData {
     private String nombre;
     private String password;
     private Date fechaNacimiento;
+    private boolean administrador = false;
 
     // Getters y setters
 
@@ -64,5 +65,13 @@ public class UsuarioData {
     @Override
     public int hashCode() {
         return Objects.hash(getId());
+    }
+
+    public boolean isAdministrador() {
+        return administrador;
+    }
+
+    public void setAdministrador(boolean administrador) {
+        this.administrador = administrador;
     }
 }
