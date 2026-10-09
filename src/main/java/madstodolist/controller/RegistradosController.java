@@ -7,6 +7,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import madstodolist.authentication.ManagerUserSession;
 
 import java.util.List;
 
@@ -15,9 +16,13 @@ public class RegistradosController {
 
     @Autowired
     UsuarioService usuarioService;
+    @Autowired
+    private ManagerUserSession managerUserSession;  
 
     @GetMapping("/registrados")
     public String listadoUsuarios(Model model) {
+        cargarUsuarioActual(model);
+
         // Obtenemos la lista de usuarios a través del servicio
         List<UsuarioData> usuarios = usuarioService.allUsuarios();
 
@@ -30,6 +35,8 @@ public class RegistradosController {
 
     @GetMapping("/registrados/{id}")
     public String descripcionUsuario(@PathVariable("id") Long id, Model model) {
+        cargarUsuarioActual(model);
+
         // Recuperamos el DTO de la capa de servicio
         UsuarioData usuario = usuarioService.findById(id);
 
@@ -42,5 +49,13 @@ public class RegistradosController {
 
         model.addAttribute("usuarioDetalle", usuario);
         return "usuarioDesc";
+    }
+
+    private void cargarUsuarioActual(Model model) {
+        Long usuarioId = managerUserSession.usuarioLogeado();
+        if (usuarioId != null) {
+            UsuarioData usuarioActual = usuarioService.findById(usuarioId);
+            model.addAttribute("usuario", usuarioActual);
+        }
     }
 }

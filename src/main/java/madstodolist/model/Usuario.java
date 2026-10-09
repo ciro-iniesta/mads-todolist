@@ -27,6 +27,14 @@ public class Usuario implements Serializable {
 
     @Column(nullable = false)
     private boolean administrador = false;
+    @Column(
+        name = "administrador_unico",
+        unique = true,
+        insertable = false,
+        updatable = false,
+        columnDefinition = "integer generated always as (case when administrador then 1 else null end)"
+    )
+    private Integer administradorUnico;
 
     // La relación es lazy por defecto,
     // es necesario acceder a la lista de tareas para que se carguen

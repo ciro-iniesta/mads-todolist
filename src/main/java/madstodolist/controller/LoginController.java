@@ -12,6 +12,8 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import madstodolist.service.UsuarioServiceException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import javax.servlet.http.HttpSession;
 import javax.validation.Valid;
@@ -47,6 +49,10 @@ public class LoginController {
 
             managerUserSession.logearUsuario(usuario.getId());
 
+            if (usuario.isAdministrador()) {
+                return "redirect:/registrados";
+            }
+
             return "redirect:/usuarios/" + usuario.getId() + "/tareas";
         } else if (loginStatus == UsuarioService.LoginStatus.USER_NOT_FOUND) {
             model.addAttribute("error", "No existe usuario");
@@ -61,20 +67,26 @@ public class LoginController {
     @GetMapping("/registro")
     public String registroForm(Model model) {
         model.addAttribute("registroData", new RegistroData());
-        return "formRegistro";
+        return prepararFormularioRegistro(model);
     }
 
    @PostMapping("/registro")
-   public String registroSubmit(@Valid RegistroData registroData, BindingResult result, Model model) {
+    public String registroSubmit(
+            @Valid @ModelAttribute("registroData") RegistroData registroData,
+            BindingResult result,
+            Model model) {
 
         if (result.hasErrors()) {
-            return "formRegistro";
+            return prepararFormularioRegistro(model);
         }
 
         if (usuarioService.findByEmail(registroData.getEmail()) != null) {
-            model.addAttribute("registroData", registroData);
-            model.addAttribute("error", "El usuario " + registroData.getEmail() + " ya existe");
-            return "formRegistro";
+            model.addAttribute(
+                "error",
+                "El usuario " + registroData.getEmail() + " ya existe"
+            );
+
+            return prepararFormularioRegistro(model);
         }
 
         UsuarioData usuario = new UsuarioData();
@@ -82,14 +94,38 @@ public class LoginController {
         usuario.setPassword(registroData.getPassword());
         usuario.setFechaNacimiento(registroData.getFechaNacimiento());
         usuario.setNombre(registroData.getNombre());
+        usuario.setAdministrador(registroData.isAdministrador());
 
-        usuarioService.registrar(usuario);
+        try {
+            usuarioService.registrar(usuario);
+        } catch (UsuarioServiceException e) {
+            model.addAttribute("error", e.getMessage());
+
+            return prepararFormularioRegistro(model);
+        } catch (DataIntegrityViolationException e) {
+            model.addAttribute(
+                "error",
+                "No se ha podido completar el registro con esos datos. "
+                    + "Revisa el formulario e inténtalo de nuevo."
+            );
+
+            return prepararFormularioRegistro(model);
+        }
+
         return "redirect:/login";
-   }
+    }
 
    @GetMapping("/logout")
    public String logout(HttpSession session) {
         managerUserSession.logout();
         return "redirect:/login";
+   }
+
+   private String prepararFormularioRegistro(Model model) {
+        model.addAttribute("mostrarAdministrador", 
+            !usuarioService.existeAdministrador()
+        );
+    
+        return "formRegistro";
    }
 }

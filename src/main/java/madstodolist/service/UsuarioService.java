@@ -37,6 +37,11 @@ public class UsuarioService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public boolean existeAdministrador() {
+        return usuarioRepository.existsByAdministradorTrue();
+    }
+
     // Se añade un usuario en la aplicación.
     // El email y password del usuario deben ser distinto de null
     // El email no debe estar registrado en la base de datos
@@ -49,6 +54,8 @@ public class UsuarioService {
             throw new UsuarioServiceException("El usuario no tiene email");
         else if (usuario.getPassword() == null)
             throw new UsuarioServiceException("El usuario no tiene password");
+        else if(usuario.isAdministrador() && existeAdministrador())
+            throw new UsuarioServiceException("Ya existe un usuario administrador");
         else {
             Usuario usuarioNuevo = modelMapper.map(usuario, Usuario.class);
             usuarioNuevo = usuarioRepository.save(usuarioNuevo);
