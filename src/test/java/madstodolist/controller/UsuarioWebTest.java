@@ -73,7 +73,10 @@ public class UsuarioWebTest {
                         .param("password", "12345678"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/usuarios/1/tareas"))
-                .andExpect(request().sessionAttribute("idUsuarioLogeado", 1L));
+                .andExpect(request().sessionAttribute(
+                "idUsuarioLogeado", 1L))
+                .andExpect(request().sessionAttribute(
+                "usuarioAdministrador", false));
     }
 
     @Test
@@ -173,7 +176,8 @@ public class UsuarioWebTest {
                         .param("password", "12345678"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/registrados"))
-                .andExpect(request().sessionAttribute("idUsuarioLogeado", 8L));
+                .andExpect(request().sessionAttribute("idUsuarioLogeado", 8L))
+                .andExpect(request().sessionAttribute("usuarioAdministrador", true));
     }
 
     @Test
