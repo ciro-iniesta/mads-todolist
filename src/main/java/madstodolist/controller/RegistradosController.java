@@ -8,6 +8,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import madstodolist.authentication.ManagerUserSession;
+import madstodolist.controller.exception.UsuarioNoAdministradorException;
 
 import java.util.List;
 
@@ -17,10 +18,11 @@ public class RegistradosController {
     @Autowired
     UsuarioService usuarioService;
     @Autowired
-    private ManagerUserSession managerUserSession;  
+    private ManagerUserSession managerUserSession;
 
     @GetMapping("/registrados")
     public String listadoUsuarios(Model model) {
+        comprobarAdministrador();
         cargarUsuarioActual(model);
 
         // Obtenemos la lista de usuarios a través del servicio
@@ -35,6 +37,7 @@ public class RegistradosController {
 
     @GetMapping("/registrados/{id}")
     public String descripcionUsuario(@PathVariable("id") Long id, Model model) {
+        comprobarAdministrador();
         cargarUsuarioActual(model);
 
         // Recuperamos el DTO de la capa de servicio
@@ -56,6 +59,12 @@ public class RegistradosController {
         if (usuarioId != null) {
             UsuarioData usuarioActual = usuarioService.findById(usuarioId);
             model.addAttribute("usuario", usuarioActual);
+        }
+    }
+
+    private void comprobarAdministrador(){
+        if(managerUserSession.usuarioLogeado() == null || !managerUserSession.usuarioAdministrador()){
+            throw new UsuarioNoAdministradorException();
         }
     }
 }

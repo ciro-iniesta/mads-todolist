@@ -46,7 +46,9 @@ public class RegistradosWebTest {
 
         // WHEN, THEN
         // Hacemos un GET a la ruta y verificamos el estado OK y el contenido HTML
-        this.mockMvc.perform(get("/registrados"))
+        this.mockMvc.perform(get("/registrados")
+        .sessionAttr("idUsuarioLogeado", 8L)
+        .sessionAttr("usuarioAdministrador", true))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("test.registro@ua.es")));
     }
@@ -64,7 +66,9 @@ public class RegistradosWebTest {
         when(usuarioService.findById(1L)).thenReturn(usuario);
 
         // WHEN + THEN: Hacemos la petición y validamos las COS
-        this.mockMvc.perform(get("/registrados/1"))
+        this.mockMvc.perform(get("/registrados/1")
+        .sessionAttr("idUsuarioLogeado", 8L)
+        .sessionAttr("usuarioAdministrador", true))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("ciro@ua.es")))
                 .andExpect(content().string(containsString("Ciro Iniesta")))
@@ -92,7 +96,8 @@ public class RegistradosWebTest {
         when(usuarioService.allUsuarios()).thenReturn(Arrays.asList(administrador, detalle));
 
         ResultActions respuesta = mockMvc.perform(get(ruta)
-                        .sessionAttr("idUsuarioLogeado", 8L))
+                        .sessionAttr("idUsuarioLogeado", 8L)
+                        .sessionAttr("usuarioAdministrador", true))
                 .andExpect(status().isOk())
                 .andExpect(model().attribute("usuario", sameInstance(administrador)))
                 .andExpect(content().string(containsString("Cerrar sesión Admin actual")))
@@ -103,5 +108,19 @@ public class RegistradosWebTest {
             respuesta.andExpect(model().attribute("usuarioDetalle", sameInstance(detalle)))
                     .andExpect(content().string(containsString("Persona consultada")));
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/registrados", "/registrados/20"})
+    public void usuarioNormalNoPuedeAccederARegistrados(String ruta)
+            throws Exception {
+
+        mockMvc.perform(get(ruta)
+                .sessionAttr("idUsuarioLogeado", 2L)
+                .sessionAttr("usuarioAdministrador", false))
+                .andExpect(status().isUnauthorized())
+                .andExpect(status().reason(
+                        "No autorizado: no tienes suficientes permisos"
+                ));
     }
 }
